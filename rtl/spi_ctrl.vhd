@@ -2,79 +2,77 @@
 -- Written by Ryan Kim, Digilent Inc.
 -- Modified by Michael Mattioli
 --
--- Description: SPI block that sends SPI data formatted SCLK active low with SDO changing on the
+-- Description: SPI block that sends SPI data formatted sclk active low with sdo changing on the
 -- falling edge.
 --
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
-entity SpiCtrl is
-    Port ( CLK         : in  STD_LOGIC; --System CLK (100MHz)
-           RST         : in  STD_LOGIC; --Global RST (Synchronous)
-           SPI_EN     : in  STD_LOGIC; --SPI block enable pin
-           SPI_DATA : in  STD_LOGIC_VECTOR (7 downto 0); --Byte to be sent
-           CS        : out STD_LOGIC; --Chip Select
-           SDO         : out STD_LOGIC; --SPI data out
-           SCLK     : out STD_LOGIC; --SPI clock
-           SPI_FIN    : out STD_LOGIC);--SPI finish flag
-end SpiCtrl;
+entity spi_ctrl is
+    Port ( clk          : in std_logic; -- System clk (100MHz)
+           rst          : in std_logic; -- Global rst (Synchronous)
+           spi_en       : in std_logic; -- SPI block enable pin
+           spi_data     : in std_logic_vector (7 downto 0); -- Byte to be sent
+           sdo          : out std_logic; -- SPI data out
+           sclk         : out std_logic; -- SPI clock
+           spi_fin      : out std_logic); --SPI finish flag
+end spi_ctrl;
 
-architecture Behavioral of SpiCtrl is
+architecture behavioral of spi_ctrl is
 
-type states is (Idle,
-                Send,
-                Hold1,
-                Hold2,
-                Hold3,
-                Hold4,
-                Done);
+    type states is (Idle,
+                    Send,
+                    Hold1,
+                    Hold2,
+                    Hold3,
+                    Hold4,
+                    Done);
 
-signal current_state : states := Idle; --Signal for state machine
+    signal current_state : states := Idle; -- Signal for state machine
 
-signal shift_register    : STD_LOGIC_VECTOR(7 downto 0); --Shift register to shift out SPI_DATA saved when SPI_EN was set
-signal shift_counter     : STD_LOGIC_VECTOR(3 downto 0); --Keeps track how many bits were sent
-signal clk_divided         : STD_LOGIC := '1'; --Used as SCLK
-signal counter             : STD_LOGIC_VECTOR(4 downto 0) := (others => '0'); --Count clocks to be used to divide CLK
-signal temp_sdo            : STD_LOGIC := '1'; --Tied to SDO
+    signal shift_register   : std_logic_vector (7 downto 0); -- Shift register to shift out spi_data saved when spi_en was set
+    signal shift_counter    : std_logic_vector (3 downto 0); -- Keeps track how many bits were sent
+    signal clk_divided      : std_logic := '1'; -- Used as sclk
+    signal counter          : std_logic_vector (4 downto 0) := (others => '0'); -- Count clocks to be used to divide clk
+    signal temp_sdo         : std_logic := '1'; -- Tied to sdo
 
-signal falling : STD_LOGIC := '0'; --signal indicating that the clk has just fell
+    signal falling : std_logic := '0'; -- Signal indicating that the clk has just fell
+
 begin
-    clk_divided <= not counter(4); --SCLK = CLK / 32
-    SCLK <= clk_divided;
-    SDO <= temp_sdo;
-    CS <= '1' when (current_state = Idle and SPI_EN = '0') else
-        '0';
-    SPI_FIN <= '1' when (current_state = Done) else
-            '0';
 
-    STATE_MACHINE : process (CLK)
+    clk_divided <= not counter(4); -- sclk = clk / 32
+    sclk <= clk_divided;
+    sdo <= temp_sdo;
+    spi_fin <= '1' when current_state = Done else '0';
+
+    STATE_MACHINE : process (clk)
     begin
-        if(rising_edge(CLK)) then
-            if(RST = '1') then --Synchronous RST
+        if rising_edge(clk) then
+            if rst = '1' then -- Synchronous rst
                 current_state <= Idle;
             else
-                case (current_state) is
-                    when Idle => --Wait for SPI_EN to go high
-                        if(SPI_EN = '1') then
+                case current_state is
+                    when Idle => -- Wait for spi_en to go high
+                        if spi_en = '1' then
                             current_state <= Send;
                         end if;
-                    when Send => --Start sending bits, transition out when all bits are sent and SCLK is high
-                        if(shift_counter = "1000" and falling = '0') then
+                    when Send => -- Start sending bits, transition out when all bits are sent and sclk is high
+                        if shift_counter = "1000" and falling = '0' then
                             current_state <= Hold1;
                         end if;
-                    when Hold1 => --Hold CS low for a bit
+                    when Hold1 => -- Hold cs low for a bit
                         current_state <= Hold2;
-                    when Hold2 => --Hold CS low for a bit
+                    when Hold2 => -- Hold cs low for a bit
                         current_state <= Hold3;
-                    when Hold3 => --Hold CS low for a bit
+                    when Hold3 => -- Hold cs low for a bit
                         current_state <= Hold4;
-                    when Hold4 => --Hold CS low for a bit
+                    when Hold4 => -- Hold cs low for a bit
                         current_state <= Done;
-                    when Done => --Finish SPI transimission wait for SPI_EN to go low
-                        if(SPI_EN = '0') then
+                    when Done => -- Finish SPI transimission wait for spi_en to go low
+                        if spi_en = '0' then
                             current_state <= Idle;
                         end if;
                     when others =>
@@ -84,35 +82,35 @@ begin
         end if;
     end process;
 
-    CLK_DIV : process (CLK)
+    clk_div : process (clk)
     begin
-        if(rising_edge(CLK)) then
-            if (current_state = Send) then --start clock counter when in send state
+        if rising_edge(clk) then
+            if current_state = Send then -- Start clock counter when in send state
                 counter <= counter + 1;
-            else --reset clock counter when not in send state
+            else -- Reset clock counter when not in send state
                 counter <= (others => '0');
             end if;
         end if;
     end process;
 
-    SPI_SEND_BYTE : process (CLK) --sends SPI data formatted SCLK active low with SDO changing on the falling edge
+    spi_send_byte : process (clk) -- Sends SPI data formatted sclk active low with sdo changing on the falling edge
     begin
-        if(CLK'event and CLK = '1') then
-            if(current_state = Idle) then
+        if rising_edge(clk) then
+            if current_state = Idle then
                 shift_counter <= (others => '0');
-                shift_register <= SPI_DATA; --keeps placing SPI_DATA into shift_register so that when state goes to send it has the latest SPI_DATA
+                shift_register <= spi_data; -- Keeps placing spi_data into shift_register so that when state goes to send it has the latest spi_data
                 temp_sdo <= '1';
-            elsif(current_state = Send) then
-                if( clk_divided = '0' and falling = '0') then --if on the falling edge of Clk_divided
-                    falling <= '1'; --Indicate that it is passed the falling edge
-                    temp_sdo <= shift_register(7); --send out the MSB
-                    shift_register <= shift_register(6 downto 0) & '0'; --Shift through SPI_DATA
-                    shift_counter <= shift_counter + 1; --Keep track of what bit it is on
-                elsif(clk_divided = '1') then --on SCLK high reset the falling flag
+            elsif current_state = Send then
+                if clk_divided = '0' and falling = '0' then -- If on the falling edge of Clk_divided
+                    falling <= '1'; -- Indicate that it is passed the falling edge
+                    temp_sdo <= shift_register(7); -- Send out the MSB
+                    shift_register <= shift_register(6 downto 0) & '0'; -- Shift through spi_data
+                    shift_counter <= shift_counter + 1; -- Keep track of what bit it is on
+                elsif clk_divided = '1' then -- On sclk high reset the falling flag
                     falling <= '0';
                 end if;
             end if;
         end if;
     end process;
 
-end Behavioral;
+end behavioral;

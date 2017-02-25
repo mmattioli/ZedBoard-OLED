@@ -2,55 +2,52 @@
 -- Written by Ryan Kim, Digilent Inc.
 -- Modified by Michael Mattioli
 --
--- Description: Creates a delay of DELAY_MS ms.
+-- Description: Creates a delay of delay_ms ms.
 --
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
-entity Delay is
-    Port ( CLK             : in  STD_LOGIC; --System CLK
-            RST         : in STD_LOGIC;  --Global RST (Synchronous)
-            DELAY_MS     : in  STD_LOGIC_VECTOR (11 downto 0); --Amount of ms to delay
-            DELAY_EN     : in  STD_LOGIC; --Delay block enable
-            DELAY_FIN     : out  STD_LOGIC); --Delay finish flag
-end Delay;
+entity delay is
+    port (  clk         : in std_logic; -- System clk
+            rst         : in std_logic;  -- Global rst (Synchronous)
+            delay_ms    : in std_logic_vector (11 downto 0); -- Amount of ms to delay
+            delay_en    : in std_logic; -- Delay block enable
+            delay_fin   : out std_logic); -- Delay finish flag
+end delay;
 
-architecture Behavioral of Delay is
+architecture behavioral of delay is
 
-type states is (Idle,
-                Hold,
-                Done);
+    type states is (Idle, Hold, Done);
 
-signal current_state : states := Idle; --Signal for state machine
-signal clk_counter : STD_LOGIC_VECTOR(16 downto 0) := (others => '0'); --Counts up on every rising edge of CLK
-signal ms_counter : STD_LOGIC_VECTOR (11 downto 0) := (others => '0'); --Counts up when clk_counter = 100,000
+    signal current_state : states := Idle; -- Signal for state machine
+    signal clk_counter : std_logic_vector(16 downto 0) := (others => '0'); -- Counts up on every rising edge of clk
+    signal ms_counter : std_logic_vector (11 downto 0) := (others => '0'); -- Counts up when clk_counter = 100,000
 
 begin
-    --DELAY_FIN goes HIGH when delay is done
-    DELAY_FIN <= '1' when (current_state = Done and DELAY_EN = '1') else
-                    '0';
+    -- delay_fin goes high when delay is done
+    delay_fin <= '1' when (current_state = Done and delay_en = '1') else '0';
 
-    --State machine for Delay block
-    STATE_MACHINE : process (CLK)
+    -- State machine for Delay block
+    state_machine : process (clk)
     begin
-        if(rising_edge(CLK)) then
-            if(RST = '1') then --When RST is asserted switch to idle (synchronous)
+        if rising_edge(clk) then
+            if rst = '1' then -- When rst is asserted switch to Idle (synchronous)
                 current_state <= Idle;
             else
-                case (current_state) is
+                case current_state is
                     when Idle =>
-                        if(DELAY_EN = '1') then --Start delay on DELAY_EN
+                        if delay_en = '1' then -- Start delay on delay_en
                             current_state <= Hold;
                         end if;
                     when Hold =>
-                        if( ms_counter = DELAY_MS) then --stay until DELAY_MS has occured
+                        if ms_counter = delay_ms then -- Stay until delay_ms has occured
                             current_state <= Done;
                         end if;
                     when Done =>
-                        if(DELAY_EN = '0') then --Wait til DELAY_EN is deasserted to go to IDLE
+                        if delay_en = '0' then -- Wait until delay_en is deasserted to go to Idle
                             current_state <= Idle;
                         end if;
                     when others =>
@@ -61,22 +58,22 @@ begin
     end process;
 
 
-    --Creates ms_counter that counts at 1KHz
-    CLK_DIV : process (CLK)
+    -- Creates ms_counter that counts at 1KHz
+    clk_div : process (clk)
     begin
-        if(CLK'event and CLK = '1') then
-            if (current_state = Hold) then
-                if(clk_counter = "11000011010100000") then --100,000
+        if rising_edge(clk) then
+            if current_state = Hold then
+                if clk_counter = "11000011010100000" then -- 100,000
                     clk_counter <= (others => '0');
-                    ms_counter <= ms_counter + 1; --increments at 1KHz
+                    ms_counter <= ms_counter + 1; -- Increments at 1KHz
                 else
                     clk_counter <= clk_counter + 1;
                 end if;
-            else --If not in the hold state reset counters
+            else -- If not in the hold state reset counters
                 clk_counter <= (others => '0');
                 ms_counter <= (others => '0');
             end if;
         end if;
     end process;
 
-end Behavioral;
+end behavioral;

@@ -5,51 +5,45 @@
 -- Description: Runs the initialization sequence for the PmodOLED.
 --
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
-entity OledInit is
-    Port ( CLK     : in  STD_LOGIC; --System Clock
-        RST     : in    STD_LOGIC;        --Global Synchronous Reset
-        EN        : in  STD_LOGIC;        --Block enable pin
-        CS      : out STD_LOGIC;        --SPI Chip Select
-        SDO    : out STD_LOGIC;        --SPI data out
-        SCLK    : out STD_LOGIC;        --SPI Clock
-        DC        : out STD_LOGIC;        --Data/Command Pin
-        RES    : out STD_LOGIC;        --PmodOLED RES
-        VBAT    : out STD_LOGIC;        --VBAT enable
-        VDD    : out STD_LOGIC;        --VDD enable
-        FIN  : out STD_LOGIC);        --OledInit Finish Flag
-end OledInit;
+entity oled_init is
+    port (  clk     : in std_logic; -- System Clock
+            rst     : in std_logic; -- Global Synchronous Reset
+            en      : in std_logic; -- Block enable pin
+            sdo     : out std_logic; -- SPI data out
+            sclk    : out std_logic; -- SPI Clock
+            dc      : out std_logic; -- Data/Command Pin
+            res     : out std_logic; -- PmodOLED res
+            vbat    : out std_logic; -- vbat enable
+            vdd     : out std_logic; -- vdd enable
+            fin     : out std_logic); -- oled_init Finish Flag
+end oled_init;
 
-architecture Behavioral of OledInit is
+architecture behavioral of oled_init is
 
-COMPONENT SpiCtrl
-    PORT(
-         CLK : IN  std_logic;
-         RST : IN  std_logic;
-         SPI_EN : IN  std_logic;
-         SPI_DATA : IN  std_logic_vector(7 downto 0);
-         CS : OUT  std_logic;
-         SDO : OUT  std_logic;
-         SCLK : OUT  std_logic;
-         SPI_FIN : OUT  std_logic
-        );
-    END COMPONENT;
+    component spi_ctrl
+        port (  clk : in  std_logic;
+                rst : in  std_logic;
+                spi_en : in  std_logic;
+                spi_data : in  std_logic_vector(7 downto 0);
+                sdo : out  std_logic;
+                sclk : out  std_logic;
+                spi_fin : out  std_logic);
+    end component;
 
-COMPONENT Delay
-    PORT(
-         CLK : IN  std_logic;
-         RST : IN  std_logic;
-         DELAY_MS : IN  std_logic_vector(11 downto 0);
-         DELAY_EN : IN  std_logic;
-         DELAY_FIN : OUT  std_logic
-        );
-    END COMPONENT;
+    component Delay
+        port ( clk : in  std_logic;
+                rst : in  std_logic;
+                delay_ms : in  std_logic_vector(11 downto 0);
+                delay_en : in  std_logic;
+                delay_fin : out  std_logic);
+    end component;
 
-type states is (Transition1,
+    type states is (Transition1,
                     Transition2,
                     Transition3,
                     Transition4,
@@ -75,200 +69,194 @@ type states is (Transition1,
                     ComConfig2,
                     DispOn,
                     FullDisp,
-                    Done
-                    );
+                    Done);
 
-signal current_state : states := Idle;
-signal after_state : states := Idle;
+    signal current_state : states := Idle;
+    signal after_state : states := Idle;
 
-signal temp_dc : STD_LOGIC := '0';
-signal temp_res : STD_LOGIC := '1';
-signal temp_vbat : STD_LOGIC := '1';
-signal temp_vdd : STD_LOGIC := '1';
-signal temp_fin : STD_LOGIC := '0';
+    signal temp_dc      : std_logic := '0';
+    signal temp_res     : std_logic := '1';
+    signal temp_vbat    : std_logic := '1';
+    signal temp_vdd     : std_logic := '1';
+    signal temp_fin     : std_logic := '0';
 
-signal temp_delay_ms : STD_LOGIC_VECTOR (11 downto 0) := (others => '0');
-signal temp_delay_en : STD_LOGIC := '0';
-signal temp_delay_fin : STD_LOGIC;
-signal temp_spi_en : STD_LOGIC := '0';
-signal temp_spi_data : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
-signal temp_spi_fin : STD_LOGIC;
+    signal temp_delay_ms    : std_logic_vector (11 downto 0) := (others => '0');
+    signal temp_delay_en    : std_logic := '0';
+    signal temp_delay_fin   : std_logic;
+    signal temp_spi_en      : std_logic := '0';
+    signal temp_spi_data    : std_logic_vector (7 downto 0) := (others => '0');
+    signal temp_spi_fin     : std_logic;
 
 begin
 
- SPI_COMP: SpiCtrl PORT MAP (
-          CLK => CLK,
-          RST => RST,
-          SPI_EN => temp_spi_en,
-          SPI_DATA => temp_spi_data,
-          CS => CS,
-          SDO => SDO,
-          SCLK => SCLK,
-          SPI_FIN => temp_spi_fin
-        );
+    spi_comp: spi_ctrl port map (clk => clk,
+                                rst => rst,
+                                spi_en => temp_spi_en,
+                                spi_data => temp_spi_data,
+                                sdo => sdo,
+                                sclk => sclk,
+                                spi_fin => temp_spi_fin);
 
-   DELAY_COMP: Delay PORT MAP (
-          CLK => CLK,
-          RST => RST,
-          DELAY_MS => temp_delay_ms,
-          DELAY_EN => temp_delay_en,
-          DELAY_FIN => temp_delay_fin
-        );
+    delay_comp: Delay port map (clk => clk,
+                                rst => rst,
+                                delay_ms => temp_delay_ms,
+                                delay_en => temp_delay_en,
+                                delay_fin => temp_delay_fin);
 
-DC <= temp_dc;
-RES <= temp_res;
-VBAT <= temp_vbat;
-VDD <= temp_vdd;
-FIN <= temp_fin;
+    dc <= temp_dc;
+    res <= temp_res;
+    vbat <= temp_vbat;
+    vdd <= temp_vdd;
+    fin <= temp_fin;
 
---Delay 100 ms after VbatOn
-temp_delay_ms <= "000001100100" when (after_state = DispContrast1) else --100 ms
-                 "000000000001"; --1ms
+    -- Delay 100 ms after VbatOn
+    temp_delay_ms <=    "000001100100" when after_state = DispContrast1 else -- 100ms
+                        "000000000001"; -- 1ms
 
-    STATE_MACHINE : process (CLK)
+    state_machine : process (clk)
     begin
-        if(rising_edge(CLK)) then
-            if(RST = '1') then
+        if rising_edge(clk) then
+            if rst = '1' then
                 current_state <= Idle;
                 temp_res <= '0';
             else
                 temp_res <= '1';
-                case (current_state) is
+                case current_state is
                     when Idle             =>
-                        if(EN = '1') then
+                        if en = '1' then
                             temp_dc <= '0';
                             current_state <= VddOn;
                         end if;
 
-                    --Initialization Sequence
-                    --This should be done everytime the PmodOLED is started
-                    when VddOn             =>
+                    -- Initialization Sequence
+                    -- This should be done everytime the OLED is started
+                    when VddOn =>
                         temp_vdd <= '0';
                         current_state <= Wait1;
-                    when Wait1             =>
+                    when Wait1 =>
                         after_state <= DispOff;
                         current_state <= Transition3;
-                    when DispOff         =>
-                        temp_spi_data <= "10101110"; --0xAE
+                    when DispOff =>
+                        temp_spi_data <= "10101110"; -- 0xAE
                         after_state <= ResetOn;
                         current_state <= Transition1;
-                    when ResetOn        =>
+                    when ResetOn =>
                         temp_res <= '0';
                         current_state <= Wait2;
-                    when Wait2            =>
+                    when Wait2 =>
                         after_state <= ResetOff;
                         current_state <= Transition3;
-                    when ResetOff        =>
+                    when ResetOff =>
                         temp_res <= '1';
                         after_state <= ChargePump1;
                         current_state <= Transition3;
-                    when ChargePump1    =>
-                        temp_spi_data <= "10001101"; --0x8D
+                    when ChargePump1 =>
+                        temp_spi_data <= "10001101"; -- 0x8D
                         after_state <= ChargePump2;
                         current_state <= Transition1;
-                    when ChargePump2     =>
-                        temp_spi_data <= "00010100"; --0x14
+                    when ChargePump2 =>
+                        temp_spi_data <= "00010100"; -- 0x14
                         after_state <= PreCharge1;
                         current_state <= Transition1;
-                    when PreCharge1    =>
-                        temp_spi_data <= "11011001"; --0xD9
+                    when PreCharge1  =>
+                        temp_spi_data <= "11011001"; -- 0xD9
                         after_state <= PreCharge2;
                         current_state <= Transition1;
-                    when PreCharge2    =>
-                        temp_spi_data <= "11110001"; --0xF1
+                    when PreCharge2 =>
+                        temp_spi_data <= "11110001"; -- 0xF1
                         after_state <= VbatOn;
                         current_state <= Transition1;
-                    when VbatOn            =>
+                    when VbatOn =>
                         temp_vbat <= '0';
                         current_state <= Wait3;
-                    when Wait3            =>
+                    when Wait3 =>
                         after_state <= DispContrast1;
                         current_state <= Transition3;
                     when DispContrast1=>
-                        temp_spi_data <= "10000001"; --0x81
+                        temp_spi_data <= "10000001"; -- 0x81
                         after_state <= DispContrast2;
                         current_state <= Transition1;
                     when DispContrast2=>
-                        temp_spi_data <= "00001111"; --0x0F
+                        temp_spi_data <= "00001111"; -- 0x0F
                         after_state <= InvertDisp1;
                         current_state <= Transition1;
-                    when InvertDisp1    =>
-                        temp_spi_data <= "10100001"; --0xA1
+                    when InvertDisp1 =>
+                        temp_spi_data <= "10100001"; -- 0xA1
                         after_state <= InvertDisp2;
                         current_state <= Transition1;
                     when InvertDisp2 =>
-                        temp_spi_data <= "11001000"; --0xC8
+                        temp_spi_data <= "11001000"; -- 0xC8
                         after_state <= ComConfig1;
                         current_state <= Transition1;
-                    when ComConfig1    =>
-                        temp_spi_data <= "11011010"; --0xDA
+                    when ComConfig1 =>
+                        temp_spi_data <= "11011010"; -- 0xDA
                         after_state <= ComConfig2;
                         current_state <= Transition1;
-                    when ComConfig2     =>
-                        temp_spi_data <= "00100000"; --0x20
+                    when ComConfig2 =>
+                        temp_spi_data <= "00100000"; -- 0x20
                         after_state <= DispOn;
                         current_state <= Transition1;
-                    when DispOn            =>
-                        temp_spi_data <= "10101111"; --0xAF
+                    when DispOn =>
+                        temp_spi_data <= "10101111"; -- 0xAF
                         after_state <= Done;
                         current_state <= Transition1;
-                    --END Initialization sequence
+                    -- End Initialization sequence
 
-                    --Used for debugging, This command turns the entire screen on regardless of memory
-                    when FullDisp        =>
-                        temp_spi_data <= "10100101"; --0xA5
+                    -- Used for debugging, turns the entire screen on regardless of memory
+                    when FullDisp =>
+                        temp_spi_data <= "10100101"; -- 0xA5
                         after_state <= Done;
                         current_state <= Transition1;
 
-                    --Done state
-                    when Done            =>
-                        if(EN = '0') then
+                    -- Done state
+                    when Done =>
+                        if en = '0' then
                             temp_fin <= '0';
                             current_state <= Idle;
                         else
                             temp_fin <= '1';
                         end if;
 
-                    --SPI transitions
-                    --1. Set SPI_EN to 1
-                    --2. Waits for SpiCtrl to finish
-                    --3. Goes to clear state (Transition5)
+                    -- SPI transitions
+                    -- 1. Set spi_en to 1
+                    -- 2. Waits for spi_ctrl to finish
+                    -- 3. Goes to clear state (Transition5)
                     when Transition1 =>
                         temp_spi_en <= '1';
                         current_state <= Transition2;
                     when Transition2 =>
-                        if(temp_spi_fin = '1') then
+                        if temp_spi_fin = '1' then
                             current_state <= Transition5;
                         end if;
+                    -- End SPI transitions
 
-                    --Delay Transitions
-                    --1. Set DELAY_EN to 1
-                    --2. Waits for Delay to finish
-                    --3. Goes to Clear state (Transition5)
+                    -- Delay transitions
+                    -- 1. Set delay_en to 1
+                    -- 2. Waits for Delay to finish
+                    -- 3. Goes to Clear state (Transition5)
                     when Transition3 =>
                         temp_delay_en <= '1';
                         current_state <= Transition4;
                     when Transition4 =>
-                        if(temp_delay_fin = '1') then
+                        if temp_delay_fin = '1' then
                             current_state <= Transition5;
                         end if;
+                    -- End Delay transitions
 
-                    --Clear transition
-                    --1. Sets both DELAY_EN and SPI_EN to 0
-                    --2. Go to after state
+                    -- Clear transitions
+                    -- 1. Sets both delay_en and spi_en to 0
+                    -- 2. Go to after state
                     when Transition5 =>
                         temp_spi_en <= '0';
                         temp_delay_en <= '0';
                         current_state <= after_state;
-                    --END SPI transitions
-                    --END Delay Transitions
-                    --END Clear transition
+                    -- End Clear transitions
 
-                    when others         =>
+                    when others =>
                         current_state <= Idle;
                 end case;
             end if;
         end if;
     end process;
 
-end Behavioral;
+end behavioral;

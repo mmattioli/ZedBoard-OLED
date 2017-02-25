@@ -30,7 +30,7 @@
 #    "ZedBoard-OLED/rtl/spi_ctrl.vhd"
 #    "ZedBoard-OLED/rtl/delay.vhd"
 #    "ZedBoard-OLED/rtl/oled_init.vhd"
-#    "ZedBoard-OLED/rtl/oled_example.vhd"
+#    "ZedBoard-OLED/rtl/oled_ex.vhd"
 #    "ZedBoard-OLED/rtl/oled_ctrl.vhd"
 #    "ZedBoard-OLED/coefficients/charLib.coe"
 #    "ZedBoard-OLED/ip/charLib/charLib.xci"
@@ -125,7 +125,7 @@ set files [list \
  "[file normalize "$origin_dir/../rtl/spi_ctrl.vhd"]"\
  "[file normalize "$origin_dir/../rtl/delay.vhd"]"\
  "[file normalize "$origin_dir/../rtl/oled_init.vhd"]"\
- "[file normalize "$origin_dir/../rtl/oled_example.vhd"]"\
+ "[file normalize "$origin_dir/../rtl/oled_ex.vhd"]"\
  "[file normalize "$origin_dir/../rtl/oled_ctrl.vhd"]"\
  "[file normalize "$origin_dir/../coefficients/charLib.coe"]"\
 ]
@@ -147,7 +147,7 @@ set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property "file_type" "VHDL" $file_obj
 
-set file "$origin_dir/../rtl/oled_example.vhd"
+set file "$origin_dir/../rtl/oled_ex.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property "file_type" "VHDL" $file_obj
