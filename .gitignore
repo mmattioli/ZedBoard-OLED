@@ -12,6 +12,9 @@
 # Constraints
 !constraints/**
 
+# Coefficients
+!coefficients/**
+
 # Tcl scripts
 !vivado/*.tcl
 

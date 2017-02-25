@@ -32,7 +32,7 @@
 #    "ZedBoard-OLED/rtl/oled_init.vhd"
 #    "ZedBoard-OLED/rtl/oled_example.vhd"
 #    "ZedBoard-OLED/rtl/oled_ctrl.vhd"
-#    "ZedBoard-OLED/rtl/charLib.coe"
+#    "ZedBoard-OLED/coefficients/charLib.coe"
 #    "ZedBoard-OLED/ip/charLib/charLib.xci"
 #    "ZedBoard-OLED/constraints/constraints.xdc"
 #
@@ -127,7 +127,7 @@ set files [list \
  "[file normalize "$origin_dir/../rtl/oled_init.vhd"]"\
  "[file normalize "$origin_dir/../rtl/oled_example.vhd"]"\
  "[file normalize "$origin_dir/../rtl/oled_ctrl.vhd"]"\
- "[file normalize "$origin_dir/../rtl/charLib.coe"]"\
+ "[file normalize "$origin_dir/../coefficients/charLib.coe"]"\
 ]
 add_files -norecurse -fileset $obj $files
 
