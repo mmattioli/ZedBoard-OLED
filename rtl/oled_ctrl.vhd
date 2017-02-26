@@ -2,7 +2,7 @@
 -- Written by Ryan Kim, Digilent Inc.
 -- Modified by Michael Mattioli
 --
--- Description: Top level controller that controls the PmodOLED blocks.
+-- Description: Top level controller that controls the OLED display blocks.
 --
 
 library ieee;

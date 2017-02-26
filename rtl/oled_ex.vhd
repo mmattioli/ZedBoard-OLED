@@ -2,8 +2,8 @@
 -- Written by Ryan Kim, Digilent Inc.
 -- Modified by Michael Mattioli
 --
--- Description: Demo for the PmodOLED. First displays the alphabet for ~4 seconds and then clears
--- the display, waits for a ~1 second and then displays "This is Digilent's PmodOLED".
+-- Description: Demo for the OLED display. First displays the alphabet for ~4 seconds and then
+-- clears the display, waits for a ~1 second and then displays "This is Digilent's PmodOLED".
 --
 
 library ieee;

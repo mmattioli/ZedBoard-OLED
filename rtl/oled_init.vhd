@@ -2,7 +2,7 @@
 -- Written by Ryan Kim, Digilent Inc.
 -- Modified by Michael Mattioli
 --
--- Description: Runs the initialization sequence for the PmodOLED.
+-- Description: Runs the initialization sequence for the OLED display.
 --
 
 library ieee;
@@ -17,7 +17,7 @@ entity oled_init is
             sdo     : out std_logic; -- SPI data out
             sclk    : out std_logic; -- SPI Clock
             dc      : out std_logic; -- Data/Command Pin
-            res     : out std_logic; -- PmodOLED res
+            res     : out std_logic; -- OLED res
             vbat    : out std_logic; -- vbat enable
             vdd     : out std_logic; -- vdd enable
             fin     : out std_logic); -- oled_init Finish Flag
@@ -29,16 +29,16 @@ architecture behavioral of oled_init is
         port (  clk : in  std_logic;
                 rst : in  std_logic;
                 spi_en : in  std_logic;
-                spi_data : in  std_logic_vector(7 downto 0);
+                spi_data : in  std_logic_vector (7 downto 0);
                 sdo : out  std_logic;
                 sclk : out  std_logic;
                 spi_fin : out  std_logic);
     end component;
 
-    component Delay
-        port ( clk : in  std_logic;
+    component delay
+        port (  clk : in  std_logic;
                 rst : in  std_logic;
-                delay_ms : in  std_logic_vector(11 downto 0);
+                delay_ms : in  std_logic_vector (11 downto 0);
                 delay_en : in  std_logic;
                 delay_fin : out  std_logic);
     end component;
@@ -89,15 +89,15 @@ architecture behavioral of oled_init is
 
 begin
 
-    spi_comp: spi_ctrl port map (clk => clk,
-                                rst => rst,
-                                spi_en => temp_spi_en,
-                                spi_data => temp_spi_data,
-                                sdo => sdo,
-                                sclk => sclk,
-                                spi_fin => temp_spi_fin);
+    spi_comp: spi_ctrl port map (   clk => clk,
+                                    rst => rst,
+                                    spi_en => temp_spi_en,
+                                    spi_data => temp_spi_data,
+                                    sdo => sdo,
+                                    sclk => sclk,
+                                    spi_fin => temp_spi_fin);
 
-    delay_comp: Delay port map (clk => clk,
+    delay_comp: delay port map (clk => clk,
                                 rst => rst,
                                 delay_ms => temp_delay_ms,
                                 delay_en => temp_delay_en,
@@ -122,14 +122,14 @@ begin
             else
                 temp_res <= '1';
                 case current_state is
-                    when Idle             =>
+                    when Idle =>
                         if en = '1' then
                             temp_dc <= '0';
                             current_state <= VddOn;
                         end if;
 
                     -- Initialization Sequence
-                    -- This should be done everytime the OLED is started
+                    -- This should be done everytime the OLED display is started
                     when VddOn =>
                         temp_vdd <= '0';
                         current_state <= Wait1;
@@ -181,11 +181,11 @@ begin
                         after_state <= InvertDisp1;
                         current_state <= Transition1;
                     when InvertDisp1 =>
-                        temp_spi_data <= "10100001"; -- 0xA1
+                        temp_spi_data <= "10100000"; -- 0xA0
                         after_state <= InvertDisp2;
                         current_state <= Transition1;
                     when InvertDisp2 =>
-                        temp_spi_data <= "11001000"; -- 0xC8
+                        temp_spi_data <= "11000000"; -- 0xC0
                         after_state <= ComConfig1;
                         current_state <= Transition1;
                     when ComConfig1 =>
@@ -193,7 +193,7 @@ begin
                         after_state <= ComConfig2;
                         current_state <= Transition1;
                     when ComConfig2 =>
-                        temp_spi_data <= "00100000"; -- 0x20
+                        temp_spi_data <= "00000000"; -- 0x00
                         after_state <= DispOn;
                         current_state <= Transition1;
                     when DispOn =>
@@ -232,7 +232,7 @@ begin
 
                     -- Delay transitions
                     -- 1. Set delay_en to 1
-                    -- 2. Waits for Delay to finish
+                    -- 2. Waits for delay to finish
                     -- 3. Goes to Clear state (Transition5)
                     when Transition3 =>
                         temp_delay_en <= '1';
@@ -241,7 +241,7 @@ begin
                         if temp_delay_fin = '1' then
                             current_state <= Transition5;
                         end if;
-                    -- End Delay transitions
+                    -- End delay transitions
 
                     -- Clear transitions
                     -- 1. Sets both delay_en and spi_en to 0
