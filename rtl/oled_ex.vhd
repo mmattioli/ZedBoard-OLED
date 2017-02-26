@@ -3,7 +3,7 @@
 -- Modified by Michael Mattioli
 --
 -- Description: Demo for the OLED display. First displays the alphabet for ~4 seconds and then
--- clears the display, waits for a ~1 second and then displays "This is Digilent's PmodOLED".
+-- clears the display, waits for a ~1 second and then displays "Hello world!".
 --
 
 library ieee;
@@ -64,7 +64,7 @@ architecture behavioral of oled_ex is
                     Wait1,
                     ClearScreen,
                     Wait2,
-                    DigilentScreen,
+                    HelloWorldScreen,
                     UpdateScreen,
                     SendChar1,
                     SendChar2,
@@ -100,11 +100,11 @@ architecture behavioral of oled_ex is
                                             (X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"),
                                             (X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"));
 
-    -- Constant that holds "This is Digilent's PmodOLED"
-    constant digilent_screen : oled_mem := ((X"54",X"68",X"69",X"73",X"20",X"69",X"73",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"),
-                                            (X"44",X"69",X"67",X"69",X"6C",X"65",X"6E",X"74",X"27",X"73",X"20",X"20",X"20",X"20",X"20",X"20"),
-                                            (X"50",X"6D",X"6F",X"64",X"4F",X"4C",X"45",X"44",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"),
-                                            (X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"));
+    -- Constant that holds "Hello world!"
+    constant hello_world_screen : oled_mem := ( (X"48",X"65",X"6c",X"6c",X"6f",X"20",X"77",X"6f",X"72",X"6c",X"64",X"21",X"20",X"20",X"20",X"20"),
+                                                (X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"),
+                                                (X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"),
+                                                (X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20",X"20"));
 
     -- Current overall state of the state machine
     signal current_state : states := Idle;
@@ -194,14 +194,14 @@ begin
                     current_screen <= clear_screen;
                     after_update_state <= Wait2;
                     current_state <= UpdateScreen;
-                -- Wait 1ms and go to DigilentScreen
+                -- Wait 1ms and go to HelloWorldScreen
                 when Wait2 =>
                     temp_delay_ms <= "001111101000"; -- 1000
-                    after_state <= DigilentScreen;
+                    after_state <= HelloWorldScreen;
                     current_state <= Transition3; -- Transition3 = delay transition states
-                -- Set currentScreen to constant digilent_screen and update the screen; go to state Done afterwards
-                when DigilentScreen =>
-                    current_screen <= digilent_screen;
+                -- Set currentScreen to constant hello_world_screen and update the screen; go to state Done afterwards
+                when HelloWorldScreen =>
+                    current_screen <= hello_world_screen;
                     after_update_state <= Done;
                     current_state <= UpdateScreen;
                 -- Do nothing until en is deassertted and then current_state is Idle
