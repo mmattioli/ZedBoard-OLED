@@ -163,7 +163,7 @@ set_property "file_type" "VHDL" $file_obj
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
-set_property "top" "PmodOLEDCtrl" $obj
+set_property "top" "oled_ctrl" $obj
 
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
@@ -209,7 +209,7 @@ set obj [get_filesets sim_1]
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
-set_property "top" "PmodOLEDCtrl" $obj
+set_property "top" "oled_ctrl" $obj
 set_property "transport_int_delay" "0" $obj
 set_property "transport_path_delay" "0" $obj
 set_property "xelab.nosort" "1" $obj
