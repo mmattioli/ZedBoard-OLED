@@ -48,7 +48,7 @@ architecture behavioral of oled_ex is
       port (    clka    : in std_logic; -- Attach System Clock to it
                 addra   : in std_logic_vector (10 downto 0); -- First 8 bits is the ASCII value of the character the last 3 bits are the parts of the char
                 wea     : in std_logic := '0'; -- Write Enable, Port A
-                dina    : in std_logic_vector (7 downto 0) := "00000000"; -- Data In, Port A
+                dina    : in std_logic_vector (7 downto 0) := (others => '0'); -- Data In, Port A
                 douta   : out std_logic_vector (7 downto 0)); -- Data byte out
     end component;
 
