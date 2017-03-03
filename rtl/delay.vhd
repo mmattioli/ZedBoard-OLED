@@ -11,10 +11,10 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity delay is
-    port (  clk         : in std_logic; -- System clk
-            rst         : in std_logic;  -- Global rst (Synchronous)
+    port (  clk         : in std_logic; -- System clock
+            rst         : in std_logic;  -- Global synchronous reset
             delay_ms    : in std_logic_vector (11 downto 0); -- Amount of ms to delay
-            delay_en    : in std_logic; -- Delay block enable
+            delay_en    : in std_logic; -- Delay enable
             delay_fin   : out std_logic); -- Delay finish flag
 end delay;
 
@@ -55,7 +55,7 @@ begin
                 end case;
             end if;
         end if;
-    end process;
+    end process state_machine;
 
 
     -- Creates ms_counter that counts at 1KHz

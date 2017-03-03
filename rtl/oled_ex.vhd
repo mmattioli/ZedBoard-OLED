@@ -12,13 +12,13 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity oled_ex is
-    port (  clk     : in std_logic; -- System clk
-            rst     : in std_logic; -- Synchronous Reset
-            en      : in std_logic; -- Example block enable pin
-            sdo     : out std_logic; -- SPI Data out
-            sclk    : out std_logic; -- SPI Clock
-            dc      : out std_logic; -- Data/Command Controller
-            fin     : out std_logic); -- Finish flag for example block
+    port (  clk         : in std_logic; -- System clock
+            rst         : in std_logic; -- Global synchronous reset
+            en          : in std_logic; -- Block enable pin
+            sdout       : out std_logic; -- SPI data out
+            oled_sclk   : out std_logic; -- SPI clock
+            oled_dc     : out std_logic; -- Data/Command controller
+            fin         : out std_logic); -- Finish flag for block
 end oled_ex;
 
 architecture behavioral of oled_ex is
@@ -27,11 +27,11 @@ architecture behavioral of oled_ex is
     component spi_ctrl
         port (  clk         : in std_logic;
                 rst         : in std_logic;
-                spi_en      : in std_logic;
-                spi_data    : in std_logic_vector (7 downto 0);
-                sdo         : out std_logic;
-                sclk        : out std_logic;
-                spi_fin     : out std_logic);
+                en          : in std_logic;
+                sdata       : in std_logic_vector (7 downto 0);
+                sdout       : out std_logic;
+                oled_sclk   : out std_logic;
+                fin         : out std_logic);
     end component;
 
     -- delay controller
@@ -45,7 +45,7 @@ architecture behavioral of oled_ex is
 
     -- character library, latency = 1
     component charLib
-      port (    clka    : in std_logic; -- Attach System Clock to it
+      port (    clka    : in std_logic; -- Attach system clock
                 addra   : in std_logic_vector (10 downto 0); -- First 8 bits is the ASCII value of the character the last 3 bits are the parts of the char
                 wea     : in std_logic := '0'; -- Write Enable, Port A
                 dina    : in std_logic_vector (7 downto 0) := (others => '0'); -- Data In, Port A
@@ -121,17 +121,17 @@ architecture behavioral of oled_ex is
     -- State to go to after the UpdateScreen is finished
     signal after_update_state : states;
 
-    -- Contains the value to be outputted to dc
+    -- Contains the value to be outputted to oled_dc
     signal temp_dc : std_logic := '0';
 
-    -- Variables used in the delay Controller Block
+    -- Used in the Delay controller block
     signal temp_delay_ms : std_logic_vector (11 downto 0); -- Amount of ms to delay
-    signal temp_delay_en : std_logic := '0'; -- Enable signal for the delay block
-    signal temp_delay_fin : std_logic; -- Finish signal for the delay block
+    signal temp_delay_en : std_logic := '0'; -- Enable signal for the Delay block
+    signal temp_delay_fin : std_logic; -- Finish signal for the Delay block
 
-    -- Variables used in the SPI controller block
+    -- Used in the SPI controller block
     signal temp_spi_en : std_logic := '0'; -- Enable signal for the SPI block
-    signal temp_spi_data : std_logic_vector (7 downto 0) := (others => '0'); -- Data to be sent out on SPI
+    signal temp_sdata : std_logic_vector (7 downto 0) := (others => '0'); -- Data to be sent out on SPI
     signal temp_spi_fin : std_logic; -- Finish signal for the SPI block
 
     signal temp_char : std_logic_vector (7 downto 0) := (others => '0'); -- Contains ASCII value for character
@@ -142,28 +142,28 @@ architecture behavioral of oled_ex is
 
 begin
 
-    dc <= temp_dc;
+    oled_dc <= temp_dc;
 
-    -- Example finish flag only high when in done state
+    -- "Example" finish flag only high when in done state
     fin <= '1' when current_state = Done else '0';
 
-    -- Instantiate SPI Block
-    spi_comp: spi_ctrl port map (clk => clk,
-                                rst => rst,
-                                spi_en => temp_spi_en,
-                                spi_data => temp_spi_data,
-                                sdo => sdo,
-                                sclk => sclk,
-                                spi_fin => temp_spi_fin);
+    -- Instantiate SPI controller
+    spi_comp: spi_ctrl port map (   clk => clk,
+                                    rst => rst,
+                                    en => temp_spi_en,
+                                    sdata => temp_sdata,
+                                    sdout => sdout,
+                                    oled_sclk => oled_sclk,
+                                    fin => temp_spi_fin);
 
-    -- Instantiate delay Block
+    -- Instantiate Delay
     delay_comp: delay port map (clk => clk,
                                 rst => rst,
                                 delay_ms => temp_delay_ms,
                                 delay_en => temp_delay_en,
                                 delay_fin => temp_delay_fin);
 
-    -- Instantiate Memory Block
+    -- Instantiate character library
     char_lib_comp : charLib port map (  clka => clk,
                                         addra => temp_addr,
                                         douta => temp_dout);
@@ -233,28 +233,28 @@ begin
                     current_state <= SendChar1;
 
                 -- Update Page states
-                -- 1. Sets dc to command mode
+                -- 1. Sets oled_dc to command mode
                 -- 2. Sends the SetPage Command
                 -- 3. Sends the Page to be set to
                 -- 4. Sets the start pixel to the left column
-                -- 5. Sets dc to data mode
+                -- 5. Sets oled_dc to data mode
                 when ClearDC =>
                     temp_dc <= '0';
                     current_state <= SetPage;
                 when SetPage =>
-                    temp_spi_data <= "00100010";
+                    temp_sdata <= "00100010";
                     after_state <= PageNum;
                     current_state <= Transition1;
                 when PageNum =>
-                    temp_spi_data <= "000000" & temp_page;
+                    temp_sdata <= "000000" & temp_page;
                     after_state <= LeftColumn1;
                     current_state <= Transition1;
                 when LeftColumn1 =>
-                    temp_spi_data <= "00000000";
+                    temp_sdata <= "00000000";
                     after_state <= LeftColumn2;
                     current_state <= Transition1;
                 when LeftColumn2 =>
-                    temp_spi_data <= "00010000";
+                    temp_sdata <= "00010000";
                     after_state <= SetDC;
                     current_state <= Transition1;
                 when SetDC =>
@@ -302,12 +302,12 @@ begin
                 when ReadMem =>
                     current_state <= ReadMem2;
                 when ReadMem2 =>
-                    temp_spi_data <= temp_dout;
+                    temp_sdata <= temp_dout;
                     current_state <= Transition1;
                 -- End Send Character States
 
                 -- SPI transitions
-                -- 1. Set spi_en to 1
+                -- 1. Set en to 1
                 -- 2. Waits for spi_ctrl to finish
                 -- 3. Goes to clear state (Transition5)
                 when Transition1 =>
@@ -333,7 +333,7 @@ begin
                 -- End Delay transitions
 
                 -- Clear transition
-                -- 1. Sets both delay_en and spi_en to 0
+                -- 1. Sets both delay_en and en to 0
                 -- 2. Go to after state
                 when Transition5 =>
                     temp_spi_en <= '0';

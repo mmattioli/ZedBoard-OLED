@@ -11,36 +11,36 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity oled_init is
-    port (  clk     : in std_logic; -- System Clock
-            rst     : in std_logic; -- Global Synchronous Reset
-            en      : in std_logic; -- Block enable pin
-            sdo     : out std_logic; -- SPI data out
-            sclk    : out std_logic; -- SPI Clock
-            dc      : out std_logic; -- Data/Command Pin
-            res     : out std_logic; -- OLED res
-            vbat    : out std_logic; -- vbat enable
-            vdd     : out std_logic; -- vdd enable
-            fin     : out std_logic); -- oled_init Finish Flag
+    port (  clk         : in std_logic; -- System clock
+            rst         : in std_logic; -- Global synchronous reset
+            en          : in std_logic; -- Block enable pin
+            sdout       : out std_logic; -- SPI data out
+            oled_sclk   : out std_logic; -- SPI clock
+            oled_dc     : out std_logic; -- Data/Command pin
+            oled_res    : out std_logic; -- OLED reset
+            oled_vbat   : out std_logic; -- oled_vbat enable
+            oled_vdd    : out std_logic; -- oled_vdd enable
+            fin         : out std_logic); -- Finish flag for block
 end oled_init;
 
 architecture behavioral of oled_init is
 
     component spi_ctrl
-        port (  clk : in  std_logic;
-                rst : in  std_logic;
-                spi_en : in  std_logic;
-                spi_data : in  std_logic_vector (7 downto 0);
-                sdo : out  std_logic;
-                sclk : out  std_logic;
-                spi_fin : out  std_logic);
+        port (  clk         : in std_logic;
+                rst         : in std_logic;
+                en          : in std_logic;
+                sdata       : in std_logic_vector (7 downto 0);
+                sdout       : out std_logic;
+                oled_sclk   : out std_logic;
+                fin         : out std_logic);
     end component;
 
     component delay
-        port (  clk : in  std_logic;
-                rst : in  std_logic;
-                delay_ms : in  std_logic_vector (11 downto 0);
-                delay_en : in  std_logic;
-                delay_fin : out  std_logic);
+        port (  clk         : in std_logic;
+                rst         : in std_logic;
+                delay_ms    : in std_logic_vector (11 downto 0);
+                delay_en    : in std_logic;
+                delay_fin   : out std_logic);
     end component;
 
     type states is (Transition1,
@@ -84,18 +84,18 @@ architecture behavioral of oled_init is
     signal temp_delay_en    : std_logic := '0';
     signal temp_delay_fin   : std_logic;
     signal temp_spi_en      : std_logic := '0';
-    signal temp_spi_data    : std_logic_vector (7 downto 0) := (others => '0');
+    signal temp_sdata       : std_logic_vector (7 downto 0) := (others => '0');
     signal temp_spi_fin     : std_logic;
 
 begin
 
     spi_comp: spi_ctrl port map (   clk => clk,
                                     rst => rst,
-                                    spi_en => temp_spi_en,
-                                    spi_data => temp_spi_data,
-                                    sdo => sdo,
-                                    sclk => sclk,
-                                    spi_fin => temp_spi_fin);
+                                    en => temp_spi_en,
+                                    sdata => temp_sdata,
+                                    sdout => sdout,
+                                    oled_sclk => oled_sclk,
+                                    fin => temp_spi_fin);
 
     delay_comp: delay port map (clk => clk,
                                 rst => rst,
@@ -103,17 +103,17 @@ begin
                                 delay_en => temp_delay_en,
                                 delay_fin => temp_delay_fin);
 
-    dc <= temp_dc;
-    res <= temp_res;
-    vbat <= temp_vbat;
-    vdd <= temp_vdd;
+    oled_dc <= temp_dc;
+    oled_res <= temp_res;
+    oled_vbat <= temp_vbat;
+    oled_vdd <= temp_vdd;
     fin <= temp_fin;
 
     -- Delay 100 ms after VbatOn
     temp_delay_ms <=    "000001100100" when after_state = DispContrast1 else -- 100ms
                         "000000000001"; -- 1ms
 
-    state_machine : process (clk)
+    process (clk)
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -137,7 +137,7 @@ begin
                         after_state <= DispOff;
                         current_state <= Transition3;
                     when DispOff =>
-                        temp_spi_data <= "10101110"; -- 0xAE
+                        temp_sdata <= "10101110"; -- 0xAE
                         after_state <= ResetOn;
                         current_state <= Transition1;
                     when ResetOn =>
@@ -151,19 +151,19 @@ begin
                         after_state <= ChargePump1;
                         current_state <= Transition3;
                     when ChargePump1 =>
-                        temp_spi_data <= "10001101"; -- 0x8D
+                        temp_sdata <= "10001101"; -- 0x8D
                         after_state <= ChargePump2;
                         current_state <= Transition1;
                     when ChargePump2 =>
-                        temp_spi_data <= "00010100"; -- 0x14
+                        temp_sdata <= "00010100"; -- 0x14
                         after_state <= PreCharge1;
                         current_state <= Transition1;
                     when PreCharge1  =>
-                        temp_spi_data <= "11011001"; -- 0xD9
+                        temp_sdata <= "11011001"; -- 0xD9
                         after_state <= PreCharge2;
                         current_state <= Transition1;
                     when PreCharge2 =>
-                        temp_spi_data <= "11110001"; -- 0xF1
+                        temp_sdata <= "11110001"; -- 0xF1
                         after_state <= VbatOn;
                         current_state <= Transition1;
                     when VbatOn =>
@@ -173,38 +173,38 @@ begin
                         after_state <= DispContrast1;
                         current_state <= Transition3;
                     when DispContrast1=>
-                        temp_spi_data <= "10000001"; -- 0x81
+                        temp_sdata <= "10000001"; -- 0x81
                         after_state <= DispContrast2;
                         current_state <= Transition1;
                     when DispContrast2=>
-                        temp_spi_data <= "00001111"; -- 0x0F
+                        temp_sdata <= "00001111"; -- 0x0F
                         after_state <= InvertDisp1;
                         current_state <= Transition1;
                     when InvertDisp1 =>
-                        temp_spi_data <= "10100000"; -- 0xA0
+                        temp_sdata <= "10100000"; -- 0xA0
                         after_state <= InvertDisp2;
                         current_state <= Transition1;
                     when InvertDisp2 =>
-                        temp_spi_data <= "11000000"; -- 0xC0
+                        temp_sdata <= "11000000"; -- 0xC0
                         after_state <= ComConfig1;
                         current_state <= Transition1;
                     when ComConfig1 =>
-                        temp_spi_data <= "11011010"; -- 0xDA
+                        temp_sdata <= "11011010"; -- 0xDA
                         after_state <= ComConfig2;
                         current_state <= Transition1;
                     when ComConfig2 =>
-                        temp_spi_data <= "00000000"; -- 0x00
+                        temp_sdata <= "00000000"; -- 0x00
                         after_state <= DispOn;
                         current_state <= Transition1;
                     when DispOn =>
-                        temp_spi_data <= "10101111"; -- 0xAF
+                        temp_sdata <= "10101111"; -- 0xAF
                         after_state <= Done;
                         current_state <= Transition1;
                     -- End Initialization sequence
 
                     -- Used for debugging, turns the entire screen on regardless of memory
                     when FullDisp =>
-                        temp_spi_data <= "10100101"; -- 0xA5
+                        temp_sdata <= "10100101"; -- 0xA5
                         after_state <= Done;
                         current_state <= Transition1;
 
@@ -218,7 +218,7 @@ begin
                         end if;
 
                     -- SPI transitions
-                    -- 1. Set spi_en to 1
+                    -- 1. Set en to 1
                     -- 2. Waits for spi_ctrl to finish
                     -- 3. Goes to clear state (Transition5)
                     when Transition1 =>
@@ -244,7 +244,7 @@ begin
                     -- End delay transitions
 
                     -- Clear transitions
-                    -- 1. Sets both delay_en and spi_en to 0
+                    -- 1. Sets both delay_en and en to 0
                     -- 2. Go to after state
                     when Transition5 =>
                         temp_spi_en <= '0';
