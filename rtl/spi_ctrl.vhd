@@ -25,10 +25,6 @@ architecture behavioral of spi_ctrl is
 
     type states is (Idle,
                     Send,
-                    Hold1,
-                    Hold2,
-                    Hold3,
-                    Hold4,
                     Done);
 
     signal current_state : states := Idle; -- Signal for state machine
@@ -61,16 +57,8 @@ begin
                         end if;
                     when Send => -- Start sending bits, transition out when all bits are sent and sclk is high
                         if shift_counter = "1000" and falling = '0' then
-                            current_state <= Hold1;
+                            current_state <= Done;
                         end if;
-                    when Hold1 => -- Hold cs low for a bit
-                        current_state <= Hold2;
-                    when Hold2 => -- Hold cs low for a bit
-                        current_state <= Hold3;
-                    when Hold3 => -- Hold cs low for a bit
-                        current_state <= Hold4;
-                    when Hold4 => -- Hold cs low for a bit
-                        current_state <= Done;
                     when Done => -- Finish SPI transimission wait for spi_en to go low
                         if spi_en = '0' then
                             current_state <= Idle;
