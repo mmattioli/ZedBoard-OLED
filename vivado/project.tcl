@@ -105,7 +105,7 @@ set obj [get_projects project]
 set_property "board_part" "em.avnet.com:zed:part0:1.3" $obj
 set_property "default_lib" "xil_defaultlib" $obj
 set_property "ip_cache_permissions" "read write" $obj
-set_property "ip_output_repo" "Z:/Git/ZedBoard-OLED/vivado/project.cache/ip" $obj
+set_property "ip_output_repo" "project.cache/ip" $obj
 set_property "sim.ip.auto_export_scripts" "1" $obj
 set_property "simulator_language" "Mixed" $obj
 set_property "target_language" "VHDL" $obj
