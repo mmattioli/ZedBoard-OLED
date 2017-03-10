@@ -44,12 +44,10 @@ architecture behavioral of oled_ex is
     end component;
 
     -- character library, latency = 1
-    component charLib
-      port (    clka    : in std_logic; -- Attach system clock
-                addra   : in std_logic_vector (10 downto 0); -- First 8 bits is the ASCII value of the character the last 3 bits are the parts of the char
-                wea     : in std_logic := '0'; -- Write Enable, Port A
-                dina    : in std_logic_vector (7 downto 0) := (others => '0'); -- Data In, Port A
-                douta   : out std_logic_vector (7 downto 0)); -- Data byte out
+    component ascii_rom
+        port (  clk    : in std_logic; -- System clock
+                addr   : in std_logic_vector (10 downto 0); -- First 8 bits is the ASCII value of the character, the last 3 bits are the parts of the char
+                dout   : out std_logic_vector (7 downto 0)); -- Data byte out
     end component;
 
     -- States for state machine
@@ -156,17 +154,17 @@ begin
                                     oled_sclk => oled_sclk,
                                     fin => temp_spi_fin);
 
-    -- Instantiate Delay
+    -- Instantiate delay
     delay_comp: delay port map (clk => clk,
                                 rst => rst,
                                 delay_ms => temp_delay_ms,
                                 delay_en => temp_delay_en,
                                 delay_fin => temp_delay_fin);
 
-    -- Instantiate character library
-    char_lib_comp : charLib port map (  clka => clk,
-                                        addra => temp_addr,
-                                        douta => temp_dout);
+    -- Instantiate ASCII character library
+    char_lib_comp : ascii_rom port map (clk => clk,
+                                        addr => temp_addr,
+                                        dout => temp_dout);
 
     process (clk)
     begin
@@ -260,12 +258,14 @@ begin
                 when SetDC =>
                     temp_dc <= '1';
                     current_state <= after_page_state;
-                -- End Update Page States
+                -- End update Page states
 
-                -- Send Character States
-                -- 1. Sets the Address to ASCII value of char with the counter appended to the end
-                -- 2. Waits a clock for the data to get ready by going to ReadMem and ReadMem2 states
-                -- 3. Send the byte of data given by the block Ram
+                -- Send character states
+                -- 1. Sets the address to ASCII value of character with the counter appended to the
+                --    end
+                -- 2. Waits a clock cycle for the data to get ready by going to ReadMem and ReadMem2
+                --    states
+                -- 3. Send the byte of data given by the ROM
                 -- 4. Repeat 7 more times for the rest of the character bytes
                 when SendChar1 =>
                     temp_addr <= temp_char & "000";
@@ -304,7 +304,7 @@ begin
                 when ReadMem2 =>
                     temp_sdata <= temp_dout;
                     current_state <= Transition1;
-                -- End Send Character States
+                -- End send character states
 
                 -- SPI transitions
                 -- 1. Set en to 1
