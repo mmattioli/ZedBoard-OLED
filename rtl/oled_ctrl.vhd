@@ -113,7 +113,7 @@ begin
                         if example_done = '1' then
                             current_state <= Done;
                         end if;
-                    -- Do nthing
+                    -- Do nothing
                     when Done =>
                         current_state <= Done;
                     when others =>
